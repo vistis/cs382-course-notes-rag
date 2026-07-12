@@ -183,7 +183,7 @@ with sb:
         "Chunk score threshold to retrieve",
         min_value=0.00,
         max_value=1.00,
-        value=0.10
+        value=0.20
     )
     st.divider()
     st.header("Dataset")

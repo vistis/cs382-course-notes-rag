@@ -76,7 +76,7 @@ class VectorStore:
             name=self.collection_id
         )
 
-    def query(self, query_text: str, top_k: int = 3, threshold: float = 1.00) -> List[Tuple[Chunk, float]]:
+    def query(self, query_text: str, top_k: int = 3, threshold: float = 0.20) -> List[Tuple[Chunk, float]]:
         """Vectorize the query and retrieve top_k matching results."""
         if self.collection is None:
             return []
