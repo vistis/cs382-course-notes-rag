@@ -12,6 +12,7 @@ Two modes are provided:
 """
 
 import os
+from pathlib import Path
 from typing import List, Tuple
 
 import google.genai as genai
@@ -68,6 +69,10 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, 
                     f"\n> :blue-badge[Info] Falling back to extractive mode.\n\n{fallback_ans}"
                 ), fallback_meta
             else:
+                if not os.path.isdir("model/GPT4All"):
+                    model_dir = Path("model/GPT4All/")
+                    model_dir.mkdir(parents=True, exist_ok=True)
+
                 GPT4All.retrieve_model(
                     model_name=local_model_name,
                     model_path="model/GPT4All/",
