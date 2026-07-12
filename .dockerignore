@@ -31,5 +31,6 @@
 **/secrets.dev.yaml
 **/values.dev.yaml
 **/model
+**/data
 LICENSE
 README.md
