@@ -1,6 +1,6 @@
 services:
   web:
-    image: course-notes-rag:latest
+    image: ghcr.io/vistis/course-notes-rag:main
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
