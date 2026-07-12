@@ -1,0 +1,23 @@
+# Interface
+streamlit
+
+# Ingestion
+pypdf
+markdown
+langchain-text-splitters
+tiktoken
+
+# Embeddings
+sentence-transformers
+chromadb
+
+# Generations
+gpt4all
+google-genai
+
+# Utilities
+python-dotenv
+
+--find-links https://download.pytorch.org/whl/cpu
+torch
+torchvision
