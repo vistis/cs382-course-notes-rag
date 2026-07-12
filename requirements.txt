@@ -1,3 +1,7 @@
+# Core
+torch
+torchvision
+
 # Interface
 streamlit
 
@@ -17,5 +21,3 @@ google-genai
 
 # Utilities
 python-dotenv
-torch
-torchvision
