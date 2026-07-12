@@ -18,6 +18,5 @@ google-genai
 # Utilities
 python-dotenv
 
---find-links https://download.pytorch.org/whl/cpu
-torch
-torchvision
+torch --index-url https://download.pytorch.org/whl/cpu
+torchvision --index-url https://download.pytorch.org/whl/cpu
