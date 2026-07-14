@@ -44,7 +44,7 @@ Models for `SentenceTransformer` and `GPT4All` will be stored in the `model` fol
 
 There are two discrete flows: loading and indexing documents from dataset and searching + generating answer.
 
-The architecture uses bi-encoder + cross-encoder.
+The architecture uses bi-encoder + cross-encoder. Bi-encoder quickly retrieve a large amount of matching chunks by embedding the query then use its vector to search for close chunk vectors, which are then re-ranked by the cross-encoder that scores by predicting the query against each chunk. This approach provides the speed of bi-encoder and accuracy of cross-encoder.
 
 ### Loading and Indexing
 
