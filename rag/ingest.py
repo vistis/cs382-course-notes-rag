@@ -1,12 +1,3 @@
-"""
-Ingestion: load raw documents from disk and split them into overlapping chunks.
-
-Upgrade path (for your final project):
-- Add PDF/HTML/Markdown loaders (e.g. pypdf, BeautifulSoup) alongside plain .txt
-- Swap the naive word-count chunker below for a sentence- or token-aware chunker
-- Store document metadata (source URL, author, date) alongside each chunk
-"""
-
 import os
 import time
 from dataclasses import dataclass
@@ -71,13 +62,6 @@ def load_documents(folder: str) -> List[dict]:
 
 
 def chunk_text(text: str, chunk_size: int = 80, overlap: int = 20) -> List[str]:
-    # """Split text into overlapping token-aware chunks."""
-    # splitter = SentenceTransformersTokenTextSplitter(
-    #     chunk_overlap=overlap,
-    #     model_name="model/SentenceTransformer/",
-    #     model_kwargs={"device": os.environ["DEVICE"]},
-    # )
-
     """Split text into overlapping token-aware chunks using OpenAI TikToken."""
     splitter = TokenTextSplitter(
         chunk_size=chunk_size,

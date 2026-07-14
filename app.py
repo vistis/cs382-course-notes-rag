@@ -1,22 +1,10 @@
-"""
-RAG-Based AI Search System — starter interface.
-
-Run with:
-    streamlit run app.py
-
-This gives you a working, end-to-end demo today: document loading, TF-IDF based
-retrieval, and an extractive answer — all wired into a real web interface. Build
-your final project by upgrading each piece (see the TODOs in rag/embed_store.py
-and rag/generate.py) without needing to touch this file's overall structure.
-"""
-
 import os
 import time
 
 import requests
 import streamlit as st
 import torch
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, CrossEncoder
 
 from rag.embed_store import VectorStore
 from rag.generate import generate_answer
@@ -24,13 +12,16 @@ from rag.ingest import build_chunk_records, load_documents
 
 BASE_DATA_DIR = "data"
 EMBEDDING_MODEL = "nomic-ai/nomic-embed-text-v1.5"
+RERANKING_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 CHUNK_SIZE = 512
 OVERLAP = 48
 
 os.environ["LOCAL_LLM_CHUNK_LIMIT"] = "2"
 
 def download_model():
-    SentenceTransformer(EMBEDDING_MODEL).save("model/SentenceTransformer/")
+    SentenceTransformer(EMBEDDING_MODEL).save("model/SentenceTransformer")
+    CrossEncoder(RERANKING_MODEL).save("model/CrossEncoder")
+
 
 def ingest(dataset_folder: str):
     docs = load_documents(dataset_folder)
@@ -55,7 +46,7 @@ try:
 except (requests.ConnectTimeout, requests.ConnectionError, requests.ReadTimeout):
     os.environ["ONLINE"] = "false"
 
-if not os.path.isfile("model/SentenceTransformer/model.safetensors"):
+if not os.path.isfile("model/SentenceTransformer/model.safetensors") or not os.path.isfile("model/CrossEncoder/model.safetensors"):
     download_model()
 
 
@@ -72,6 +63,9 @@ datasets = sorted([
     f for f in os.listdir(BASE_DATA_DIR)
     if os.path.isdir(os.path.join(BASE_DATA_DIR, f))
 ])
+
+if len(datasets) == 0:
+    datasets.append(BASE_DATA_DIR)
 
 if "vector_store" not in st.session_state:
     st.session_state.vector_store = VectorStore()
@@ -91,6 +85,7 @@ with sb:
     st.subheader("About")
     st.markdown(
         f"- Embedding Model: `{EMBEDDING_MODEL}` (local)\n"
+        f"- Re-ranking Model: `{RERANKING_MODEL}` (local)\n"
         f"- Chunking Strategy: `TikToken` token-aware text splitter\n"
         f"- Chunk Size and Overlap: (`{CHUNK_SIZE}`, `{OVERLAP}`)\n"
         f"- Local Model Processor: `{os.getenv('DEVICE').upper()}`\n"

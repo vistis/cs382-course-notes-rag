@@ -1,33 +1,21 @@
-"""
-Vector store: turn chunks into vectors and support similarity search over them.
-
-This starter ships with a TF-IDF backend (same technique from the Week 14 lab) so
-the whole project runs immediately with zero API keys and no model downloads.
-
-Upgrade path (for your final project — do this once the pipeline works end-to-end):
-- [DONE] Swap TfidfVectorizer for real embeddings, e.g.:
-    from sentence_transformers import SentenceTransformer
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-    vectors = model.encode(texts)
-- Swap the in-memory cosine_similarity search below for FAISS or Chroma once your
-  chunk count grows past a few thousand.
-- Keep the VectorStore interface (`build`, `query`) the same so app.py doesn't change.
-"""
-
 import os
+import math
 from typing import List, Tuple
 
 import chromadb
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, CrossEncoder
 
 from .ingest import Chunk
 
 
 class VectorStore:
     def __init__(self):
-        """Vectorize and embed to ChromaDB."""
+        """Setup embedder, re-ranker, and ChromaDB."""
         self.embedder = SentenceTransformer(
             "model/SentenceTransformer/", device=os.getenv("DEVICE")
+        )
+        self.reranker = CrossEncoder(
+            "model/CrossEncoder/", device=os.getenv("DEVICE")
         )
 
         self.store = chromadb.Client()
@@ -39,7 +27,7 @@ class VectorStore:
         """Embed the chunks as vectors and store in ChromaDB."""
         self.collection_id = dataset.replace(" ", "_").lower()
         self.collection = self.store.get_or_create_collection(
-            name=self.collection_id, metadata={"hnsw:space": "cosine"}
+            name=self.collection_id
         )
         self.dataset_chunk_registry[self.collection_id] = chunks
 
@@ -84,30 +72,37 @@ class VectorStore:
         chunks = self.dataset_chunk_registry.get(self.collection_id, [])
         chunk_ids = {c.chunk_id: c for c in chunks}
 
+        k_candidates = top_k * 5
+
         query_vec = self.embedder.encode([f"search_query={query_text}"], device=os.getenv("DEVICE"))
         results = self.collection.query(
-            query_embeddings=query_vec.tolist(), n_results=top_k
+            query_embeddings=query_vec.tolist(), n_results=k_candidates
         )
 
         if not results or not results["ids"] or not results["ids"][0]:
             return []
 
         matched_ids = results["ids"][0]
-        distances = results["distances"][0]
 
-        output = []
-        for doc_id, distance in zip(matched_ids, distances):
-            # idx = int(doc_id[1:])
-            # if idx >= len(chunks):
-            #     continue
-            # chunk = chunks[idx]
+        candidates = []
+        for doc_id in matched_ids:
             chunk = chunk_ids.get(doc_id)
-            if not chunk:
-                continue
+            if chunk:
+                candidates.append(chunk)
 
-            similarity_score = 1.0 - distance
+        if not candidates:
+            return []
+
+        rerank_inputs = [[query_text, chunk.text] for chunk in candidates]
+        rerank_scores = self.reranker.predict(rerank_inputs)
+
+        chunk_scores = []
+        for chunk, raw_score in zip(candidates, rerank_scores):
+            similarity_score = 1 / (1 + math.exp(-raw_score))
 
             if similarity_score >= threshold:
-                output.append((chunk, float(similarity_score)))
+                chunk_scores.append((chunk, similarity_score))
 
-        return output
+        chunk_scores.sort(key=lambda x: x[1], reverse=True)
+
+        return chunk_scores[:top_k]

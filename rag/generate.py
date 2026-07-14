@@ -1,16 +1,3 @@
-"""
-Generation: turn retrieved chunks + a query into a final answer.
-
-Two modes are provided:
-- "extractive" (default): no API key needed, works immediately. Just stitches
-  together the retrieved chunks so you can verify retrieval quality before wiring
-  up an LLM.
-- "llm": calls an LLM to write a grounded answer from the retrieved context.
-  TODO: fill in your provider of choice (Anthropic, OpenAI, a local model via
-  Ollama, etc). A minimal Anthropic example is sketched below — install the
-  `anthropic` package and set the ANTHROPIC_API_KEY environment variable to use it.
-"""
-
 import os
 from pathlib import Path
 from typing import List, Tuple
@@ -115,7 +102,7 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, 
         )
         return response.text, {"mode": "LLM", "provider": "Google (Gemini Flash Lite)", "provider_raw": "google"}
     elif provider == "local":
-        response = f">:yellow-badge[Warning] Local LLM is experimental, has chunk read limited to {local_llm_chunk_limit}, and is very prone to halluncination. Take its output with a grain of salt.\n\n"
+        response = f"> :yellow-badge[Warning] Local LLM is experimental, has chunk read limited to {local_llm_chunk_limit}, and is very prone to halluncination. Take its output with a grain of salt.\n\n"
         model = GPT4All(
             model_name=local_model_name,
             model_path="model/GPT4All/",
@@ -134,8 +121,8 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, 
 
     fallback_ans, fallback_meta = extractive_answer(query, retrieved, dataset)
     return (
-        '> [Unknown Provider] Only "google", "local" are supported.\n'
-        f"Falling back to extractive mode:\n\n---\n\n{fallback_ans}"
+        '> :red-badge[Error] Unknown provider. Only "google", "local" are supported.\n'
+        f"\n> :blue-badge[Info] Falling back to extractive mode.\n\n{fallback_ans}"
     ), fallback_meta
 
 
