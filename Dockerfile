@@ -1,6 +1,6 @@
 ARG PYTHON_VERSION=3.14
 
-FROM python:${PYTHON_VERSION} AS builder
+FROM python:${PYTHON_VERSION}-slim AS builder
 
 WORKDIR /app
 
@@ -8,8 +8,8 @@ RUN python3 -m venv /venv
 ENV PATH="/venv/bin:$PATH"
 
 RUN --mount=type=cache,target=/root/.cache/pip \
-    --mount=type=bind,source=requirements-cpu.txt,target=requirements-cpu.txt \
-    pip install -r requirements-cpu.txt
+    --mount=type=bind,source=requirements-cpu.txt,target=requirements.txt \
+    pip install -r requirements.txt
 
 FROM python:${PYTHON_VERSION}-slim
 

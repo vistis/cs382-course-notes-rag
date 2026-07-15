@@ -19,7 +19,7 @@ This project made the following changes:
 - Use CrossEncoder with model `cross-encoder/ms-marco-MiniLM-L-6-v2` as the re-ranker
 - Implemented bi-encoding + cross-encoding chunk retrieval
 - Store vectors in an actual datastore using `ChromaDB` and use it to search for chunks against query
-- Added LLM responses with `gemini-flash-lite` as the default with experimental local fallback using `llama.cpp` (model: `Phi-4-mini-instruct-Q4_K_M`)
+- Added LLM responses with `gemini-flash-lite` as the default with experimental local fallback using `llama.cpp` (model: `Phi-4-mini-instruct`)
 - Graceful error handling such as falling back from LLM to basic extractive response when there is no internet or no API key was set
 - Added dynamic dataset selection to simulate changing the course. On change, it will index the new dataset and switch to it. If the dataset is already built, it will simply switch to it, improving performance
 - Added score threshold option when searching

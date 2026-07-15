@@ -3,7 +3,8 @@ import math
 from typing import List, Tuple
 
 import chromadb
-from sentence_transformers import SentenceTransformer, CrossEncoder
+from fastembed import TextEmbedding
+from fastembed.rerank.cross_encoder import TextCrossEncoder
 
 from .ingest import Chunk
 
@@ -11,11 +12,11 @@ from .ingest import Chunk
 class VectorStore:
     def __init__(self):
         """Setup embedder, re-ranker, and ChromaDB."""
-        self.embedder = SentenceTransformer(
-            "model/SentenceTransformer/", device=os.getenv("DEVICE")
+        self.embedder = TextEmbedding(
+            model_name=os.getenv("EMBEDDING_MODEL"), cache_dir="model/FastEmbed"
         )
-        self.reranker = CrossEncoder(
-            "model/CrossEncoder/", device=os.getenv("DEVICE")
+        self.reranker = TextCrossEncoder(
+            model_name=os.getenv("RERANKING_MODEL"), cache_dir="model/FastEmbed"
         )
 
         self.store = chromadb.Client()
@@ -48,11 +49,12 @@ class VectorStore:
             for c in chunks
         ]
 
-        vectors = self.embedder.encode([f"search_document: {c.text}" for c in chunks], device=os.getenv("DEVICE"))
+        vectors_raw = self.embedder.embed(c.text for c in chunks)
+        vectors = [vec.tolist() for vec in vectors_raw]
+
         self.collection.add(
-            # ids=[f"c{i}" for i in range(len(documents))],
             ids=ids,
-            embeddings=vectors.tolist(),
+            embeddings=vectors,
             documents=documents,
             metadatas=metadatas
         )
@@ -74,9 +76,11 @@ class VectorStore:
 
         k_candidates = top_k * 5
 
-        query_vec = self.embedder.encode([f"search_query={query_text}"], device=os.getenv("DEVICE"))
+        query_vec_raw = self.embedder.query_embed(query_text)
+        query_vec = [vec.tolist() for vec in query_vec_raw]
+
         results = self.collection.query(
-            query_embeddings=query_vec.tolist(), n_results=k_candidates
+            query_embeddings=query_vec, n_results=k_candidates
         )
 
         if not results or not results["ids"] or not results["ids"][0]:
@@ -93,8 +97,8 @@ class VectorStore:
         if not candidates:
             return []
 
-        rerank_inputs = [[query_text, chunk.text] for chunk in candidates]
-        rerank_scores = self.reranker.predict(rerank_inputs)
+        candidate_texts = [chunk.text for chunk in candidates]
+        rerank_scores = list(self.reranker.rerank(query_text, candidate_texts))
 
         chunk_scores = []
         for chunk, raw_score in zip(candidates, rerank_scores):

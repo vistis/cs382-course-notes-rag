@@ -4,9 +4,9 @@ pypdf
 markdown
 langchain-text-splitters
 tiktoken
-fastembed
+fastembed-gpu
 chromadb
 google-genai
 
---extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
+--extra-index-url https://abetlen.github.io/llama-cpp-python/whl/vulkan
 llama-cpp-python

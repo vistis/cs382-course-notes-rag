@@ -1,44 +1,28 @@
 import os
+from pathlib import Path
 import time
 
 import requests
 import streamlit as st
-import torch
-from sentence_transformers import SentenceTransformer, CrossEncoder
+from llama_cpp import Llama
 
 from rag.embed_store import VectorStore
 from rag.generate import generate_answer
 from rag.ingest import build_chunk_records, load_documents
 
 BASE_DATA_DIR = "data"
-EMBEDDING_MODEL = "nomic-ai/nomic-embed-text-v1.5"
-RERANKING_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 CHUNK_SIZE = 512
 OVERLAP = 48
 
+os.environ["EMBEDDING_MODEL"] = "sentence-transformers/all-MiniLM-L6-v2"
+os.environ["RERANKING_MODEL"] = "Xenova/ms-marco-MiniLM-L-6-v2"
 os.environ["LOCAL_LLM_CHUNK_LIMIT"] = "3"
 
-def download_model():
-    SentenceTransformer(EMBEDDING_MODEL).save("model/SentenceTransformer")
-    CrossEncoder(RERANKING_MODEL).save("model/CrossEncoder")
 
-
-def ingest(dataset_folder: str):
-    docs = load_documents(dataset_folder)
-    chunks = build_chunk_records(docs=docs, chunk_size=CHUNK_SIZE, overlap=OVERLAP)
-    return docs, chunks
-
+embedding_model = os.getenv("EMBEDDING_MODEL")
+reranking_model = os.getenv("RERANKING_MODEL")
 local_llm_chunk_limit = os.getenv("LOCAL_LLM_CHUNK_LIMIT")
 online = os.getenv("ONLINE")
-
-if torch.cuda.is_available():
-    os.environ["DEVICE"] = "cuda"
-elif torch.xpu.is_available():
-    os.environ["DEVICE"] = "xpu"
-elif torch.backends.mps.is_available():
-    os.environ["DEVICE"] = "mps"
-else:
-    os.environ["DEVICE"] = "cpu"
 
 try:
     requests.get("https://python.org", timeout=10)
@@ -46,18 +30,17 @@ try:
 except (requests.ConnectTimeout, requests.ConnectionError, requests.ReadTimeout):
     os.environ["ONLINE"] = "false"
 
-if not os.path.isfile("model/SentenceTransformer/model.safetensors") or not os.path.isfile("model/CrossEncoder/model.safetensors"):
-    download_model()
+# if not os.path.isfile("model/SentenceTransformer/model.safetensors") or not os.path.isfile("model/CrossEncoder/model.safetensors"):
+#     download_model()
 
 
 st.set_page_config(page_title="Course Notes RAG", page_icon="", layout="wide")
 
-@st.cache_resource(show_spinner="Updating model...")
-def update_model():
-    if online == "true":
-        download_model()
-
-update_model()
+@st.cache_resource(show_spinner="Loading dataset...")
+def ingest(dataset_folder: str):
+    docs = load_documents(dataset_folder)
+    chunks = build_chunk_records(docs=docs, chunk_size=CHUNK_SIZE, overlap=OVERLAP)
+    return docs, chunks
 
 datasets = sorted([
     f for f in os.listdir(BASE_DATA_DIR)
@@ -84,11 +67,10 @@ sb = st.sidebar
 with sb:
     st.subheader("About")
     st.markdown(
-        f"- Embedding Model: `{EMBEDDING_MODEL}` (local)\n"
-        f"- Re-ranking Model: `{RERANKING_MODEL}` (local)\n"
+        f"- Embedding Model: `{embedding_model}` (local)\n"
+        f"- Re-ranking Model: `{reranking_model}` (local)\n"
         f"- Chunking Strategy: `TikToken` token-aware text splitter\n"
         f"- Chunk Size and Overlap: (`{CHUNK_SIZE}`, `{OVERLAP}`)\n"
-        f"- Local Model Processor: `{os.getenv('DEVICE').upper()}`\n"
         f"- Internet Connection: `{'TRUE' if online == 'true' else 'FALSE'}`"
     )
 
@@ -121,10 +103,9 @@ if st.session_state.selected_dataset != selected_dataset:
             store.switch_collection(selected_dataset)
 
     else:
-        with st.spinner("Loading and indexing dataset..."):
-            dataset_folder = os.path.join(BASE_DATA_DIR, selected_dataset)
-            docs, chunks = ingest(dataset_folder)
-
+        dataset_folder = os.path.join(BASE_DATA_DIR, selected_dataset)
+        docs, chunks = ingest(dataset_folder)
+        with st.spinner("Indexing dataset..."):
             store.build(chunks, selected_dataset)
 
             st.session_state.ingested_datasets[selected_dataset] = {
