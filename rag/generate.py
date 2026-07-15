@@ -66,7 +66,7 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, 
                     allow_download=True,
                 )
 
-    context = "\n\n".join(f"A chunk of \"{c.doc_title}\" by {c.doc_author} ({c.doc_date})\n{c.text}\n\n" for c, _ in retrieved)
+    context = "\n\n".join(f"A chunk of \"{c.doc_title}\" by {c.doc_author} ({c.doc_date})\nContent:\n{c.text}" for c, _ in retrieved)
     system_instruction = (
             "SYSTEM INSTRUCTIONS:\n"
             "You are the Core Response Generator for a course note Retrieval-Augmented Generation AI Search System.\n"
@@ -83,7 +83,7 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, 
     prompt = (
         f"{system_instruction}\n\n"
         f"=== START CONTEXT ===\n"
-        f"\n\nCourse: {dataset}{context if context.strip() else '[No Context Provided]'}\n"
+        f"\n\nCourse: {dataset}\n{context if context.strip() else '[No Context Provided]'}\n"
         f"=== END CONTEXT ===\n\n"
         f"=== START USER QUERY ===\n"
         f"{query}\n"
@@ -109,14 +109,26 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, 
             allow_download=False,
             device="gpu" if os.getenv("DEVICE") != "cpu" else "cpu",
         )
-        prompt = (
-            f"{system_instruction}\n\n"
-            f"=== START CONTEXT ===\n"
-            f"\n\nCourse: {dataset}{context if context.strip() else '[No Context Provided]'}\n"
-            f"=== END CONTEXT ===\n\n"
+        system_instruction = (
+            "You are a professional assistant. Write a concise, factual summary using ONLY the provided context. "
+            "Cite document titles next to the facts you state. "
+            "Do not use outside knowledge. If the context is empty or irrelevant, reply exactly with: "
+            "'No relevant information found in the provided documents.' and nothing else. "
+            "Be direct; do not say 'Here is the summary' or use conversational filler."
         )
-        with model.chat_session(system_prompt=prompt):
-            response += model.generate(prompt=query, max_tokens=256)
+        payload = (
+            f"Course Dataset: {dataset}\n\n"
+            f"--- CONTEXT ---\n{context if context.strip() else '[No Context Provided]'}\n"
+            f"--- END CONTEXT ---\n\n"
+            f"User Query: {query}"
+        )
+        prompt = (
+            f"<|system|>\n{system_instruction}<|end|>\n"
+            f"<|user|>\n{payload}<|end|>\n"
+            f"<|assistant|>\n"
+        )
+
+        response += model.generate(prompt=query, max_tokens=256)
         return response, {"mode": "LLM", "provider": "Local (Phi Mini)", "provider_raw": "local"}
 
     fallback_ans, fallback_meta = extractive_answer(query, retrieved, dataset)
