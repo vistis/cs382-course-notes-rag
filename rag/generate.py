@@ -25,7 +25,7 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, 
 
     online = os.getenv("ONLINE")
     local_llm_chunk_limit = os.getenv("LOCAL_LLM_CHUNK_LIMIT")
-    local_model_name = "orca-mini-3b-gguf2-q4_0.gguf"
+    local_model_name = "Phi-3-mini-4k-instruct.Q4_0.gguf"
 
     if provider != "local":
         error = False
@@ -117,7 +117,7 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, 
         )
         with model.chat_session(system_prompt=prompt):
             response += model.generate(prompt=query, max_tokens=256)
-        return response, {"mode": "LLM", "provider": "Local (Orca Mini)", "provider_raw": "local"}
+        return response, {"mode": "LLM", "provider": "Local (Phi Mini)", "provider_raw": "local"}
 
     fallback_ans, fallback_meta = extractive_answer(query, retrieved, dataset)
     return (

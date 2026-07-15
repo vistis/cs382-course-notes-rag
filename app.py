@@ -157,7 +157,7 @@ with sb:
     )
     provider_display = {
         "google": "Google (Gemini Flash Lite)",
-        "local": "Local (Orca Mini) [Experimental]",
+        "local": "Local (Phi Mini) [Experimental]",
     }
     provider = st.selectbox(
         label="LLM Provider",
