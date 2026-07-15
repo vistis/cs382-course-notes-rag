@@ -4,7 +4,7 @@ from typing import List, Tuple
 
 import google.genai as genai
 from dotenv import load_dotenv
-from gpt4all import GPT4All
+from llama_cpp import Llama
 
 from .ingest import Chunk
 
@@ -24,8 +24,10 @@ def extractive_answer(query: str, retrieved: List[Tuple[Chunk, float]], dataset:
 def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, dataset: str) -> Tuple[str, dict]:
 
     online = os.getenv("ONLINE")
+    local_model_repo = "unsloth/Phi-4-mini-instruct-GGUF"
+    local_model_name = "Phi-4-mini-instruct-Q3_K_M.gguf"
+    local_model_ctx = 2048
     local_llm_chunk_limit = os.getenv("LOCAL_LLM_CHUNK_LIMIT")
-    local_model_name = "Phi-3-mini-4k-instruct.Q4_0.gguf"
 
     if provider != "local":
         error = False
@@ -48,7 +50,7 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, 
 
     if provider == "local":
         retrieved = retrieved[:int(local_llm_chunk_limit)]
-        if not os.path.isfile(f"model/GPT4All/{local_model_name}"):
+        if not os.path.isfile(f"model/Llama/{local_model_name}"):
             if online == "false":
                 fallback_ans, fallback_meta = extractive_answer(query, retrieved, dataset)
                 return (
@@ -56,17 +58,18 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, 
                     f"\n> :blue-badge[Info] Falling back to extractive mode.\n\n{fallback_ans}"
                 ), fallback_meta
             else:
-                if not os.path.isdir("model/GPT4All"):
-                    model_dir = Path("model/GPT4All/")
+                if not os.path.isdir("model/Llama"):
+                    model_dir = Path("model/Llama/")
                     model_dir.mkdir(parents=True, exist_ok=True)
 
-                GPT4All.retrieve_model(
-                    model_name=local_model_name,
-                    model_path="model/GPT4All/",
-                    allow_download=True,
+                Llama.from_pretrained(
+                    repo_id=local_model_repo,
+                    filename=local_model_name,
+                    local_dir="model/Llama",
+                    verbose=False
                 )
 
-    context = "\n\n".join(f"A chunk of \"{c.doc_title}\" by {c.doc_author} ({c.doc_date})\nContent:\n{c.text}" for c, _ in retrieved)
+    context = "\n\n".join(f"Document: \"{c.doc_title}\" by {c.doc_author} ({c.doc_date})\nContent:\n{c.text}" for c, _ in retrieved)
     system_instruction = (
             "SYSTEM INSTRUCTIONS:\n"
             "You are the Core Response Generator for a course note Retrieval-Augmented Generation AI Search System.\n"
@@ -102,19 +105,12 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, 
         )
         return response.text, {"mode": "LLM", "provider": "Google (Gemini Flash Lite)", "provider_raw": "google"}
     elif provider == "local":
-        response = f"> :yellow-badge[Warning] Local LLM is experimental, has chunk read limited to {local_llm_chunk_limit}, and is very prone to halluncination. Take its output with a grain of salt.\n\n"
-        model = GPT4All(
-            model_name=local_model_name,
-            model_path="model/GPT4All/",
-            allow_download=False,
-            device="gpu" if os.getenv("DEVICE") != "cpu" else "cpu",
-        )
-        system_instruction = (
-            "You are a professional assistant. Write a concise, factual summary using ONLY the provided context. "
-            "Cite document titles next to the facts you state. "
-            "Do not use outside knowledge. If the context is empty or irrelevant, reply exactly with: "
-            "'No relevant information found in the provided documents.' and nothing else. "
-            "Be direct; do not say 'Here is the summary' or use conversational filler."
+        response = f"> :yellow-badge[Warning] Local LLM is experimental, has chunk read limited to {local_llm_chunk_limit}, and is prone to halluncination. Take its output with a grain of salt.\n\n"
+        model = Llama(
+            model_path=f"model/Llama/{local_model_name}",
+            n_ctx=local_model_ctx,
+            n_gpu_layers=-1 if os.getenv("DEVICE") != "cpu" else 0,
+            verbose=False
         )
         payload = (
             f"Course Dataset: {dataset}\n\n"
@@ -128,8 +124,10 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, 
             f"<|assistant|>\n"
         )
 
-        response += model.generate(prompt=query, max_tokens=256)
-        return response, {"mode": "LLM", "provider": "Local (Phi Mini)", "provider_raw": "local"}
+        response_raw = model(prompt=prompt, max_tokens=64)
+        response += response_raw['choices'][0]['text'].strip()
+
+        return response, {"mode": "LLM", "provider": "Local (Phi 4 Mini Instruct)", "provider_raw": "local"}
 
     fallback_ans, fallback_meta = extractive_answer(query, retrieved, dataset)
     return (

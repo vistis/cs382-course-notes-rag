@@ -16,7 +16,7 @@ RERANKING_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 CHUNK_SIZE = 512
 OVERLAP = 48
 
-os.environ["LOCAL_LLM_CHUNK_LIMIT"] = "2"
+os.environ["LOCAL_LLM_CHUNK_LIMIT"] = "3"
 
 def download_model():
     SentenceTransformer(EMBEDDING_MODEL).save("model/SentenceTransformer")
@@ -157,7 +157,7 @@ with sb:
     )
     provider_display = {
         "google": "Google (Gemini Flash Lite)",
-        "local": "Local (Phi Mini) [Experimental]",
+        "local": "Local (Phi 4 Mini Instruct) [Experimental]",
     }
     provider = st.selectbox(
         label="LLM Provider",
@@ -165,7 +165,7 @@ with sb:
         index=0,
         format_func=lambda x: provider_display.get(x),
         disabled=False if mode == "llm" else True,
-        help=f"Requires provider API key set in environment (except local provider).\nLocal is experimental, has chunk read limited to {local_llm_chunk_limit}, and is very prone to hallucination; use as LLM fallback only.",
+        help=f"Requires provider API key set in environment (except local provider).\nLocal is experimental, has chunk read limited to {local_llm_chunk_limit}, and is prone to hallucination; use as LLM fallback only.",
     )
     max_chunks = len(chunks)
     top_k = st.slider(

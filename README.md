@@ -19,7 +19,7 @@ This project made the following changes:
 - Use CrossEncoder with model `cross-encoder/ms-marco-MiniLM-L-6-v2` as the re-ranker
 - Implemented bi-encoding + cross-encoding chunk retrieval
 - Store vectors in an actual datastore using `ChromaDB` and use it to search for chunks against query
-- Added LLM responses with `gemini-flash-lite` as the default with experimental local fallback using `GPT4All` (model: `Phi-3-mini-4k-instruct.Q4_0`)
+- Added LLM responses with `gemini-flash-lite` as the default with experimental local fallback using `llama.cpp` (model: `Phi-4-mini-instruct-Q4_K_M`)
 - Graceful error handling such as falling back from LLM to basic extractive response when there is no internet or no API key was set
 - Added dynamic dataset selection to simulate changing the course. On change, it will index the new dataset and switch to it. If the dataset is already built, it will simply switch to it, improving performance
 - Added score threshold option when searching
@@ -36,7 +36,7 @@ The repository contains all the necessary Python scripts. Here is what each one 
 - `rag/embed_store.py`: cached as a Streamlit resource to provide a persistent vector store across queries. It is a ChromaDB instance that store vectors of chunks loaded by `ingest.py`, embedded using SentenceTransformer, and handles switching dataset and chunk retrieval by querying the determined ChromaDB collection with an embedded query text. Results are re-ranked using `CrossEncoder`.
 - `rag/generate.py`: generates the answer based on the retrieved chunks from `embed_store.py`. It has two modes - extractive, and LLM. Extractive return the chunks as they are as answer while LLM provide an overview response based on the retrieved chunks.
 
-Models for `SentenceTransformer` and `GPT4All` will be stored in the `model` folder and a dataset refers to a folder of documents inside the `data` folder.
+Models for `SentenceTransformer` and `llama.cpp` will be stored in the `model` folder and a dataset refers to a folder of documents inside the `data` folder.
 
 ## Architecture
 
@@ -65,7 +65,7 @@ User's question is passed to `embed_store.py` to be embedded into vectors which 
 
 From ChromaDB, it retrieves 5 times the number of chunks requested by top k as candidates. The candidates are then re-ranked using the cross encoder to predict the score and sort highest to lowest. Out all the candidates only the top k are returned back.
 
-The retrieved chunks then sent to `generate.py` such that an actual answer can be displayed in the interface. The answer can be generated using external LLM (Google Gemini), local LLM (GPT4All) or just extractive, depending on the search settings. If requested for external error, in the case of errors such as missing API keys or no server internet connection, it falls back to the local LLM. If the local LLM is not available, it falls back to extractive mode.
+The retrieved chunks then sent to `generate.py` such that an actual answer can be displayed in the interface. The answer can be generated using external LLM (Google Gemini), local LLM (llama.cpp) or just extractive, depending on the search settings. If requested for external error, in the case of errors such as missing API keys or no server internet connection, it falls back to the local LLM. If the local LLM is not available, it falls back to extractive mode.
 
 ## Setup
 

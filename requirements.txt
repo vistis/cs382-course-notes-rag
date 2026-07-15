@@ -16,7 +16,7 @@ sentence-transformers
 chromadb
 
 # Generations
-gpt4all
+llama-cpp-python
 google-genai
 
 # Utilities
