@@ -1,10 +1,8 @@
 import os
-from pathlib import Path
 import time
 
 import requests
 import streamlit as st
-from llama_cpp import Llama
 
 from rag.embed_store import VectorStore
 from rag.generate import generate_answer
