@@ -6,7 +6,7 @@
 
 | Model Processor        | Available RAM | Chunk Size | Overlap | Answer Mode         |
 | ---------------------- | ------------- | ---------- | ------- | ------------------- |
-| CPU (~3vCPU EPYC ROME) | ~4GB          | 512        | 32      | LLM (Google Gemini) |
+| CPU (~3vCPU EPYC ROME) | ~4GB          | 512        | 48      | LLM (Google Gemini) |
 
 The datasets and documents can be found in the repository's `data` folder.
 
