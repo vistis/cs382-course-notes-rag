@@ -15,8 +15,8 @@ This project made the following changes:
 
 - Upgraded the loader to also support PDF and MD (markdown) with metadata extraction
 - Changed to a token-aware chunking strategy using OpenAI's TikToken
-- Use SentenceTransformer with model `nomic-ai/nomic-embed-text-v1.5` as the embedder
-- Use CrossEncoder with model `cross-encoder/ms-marco-MiniLM-L-6-v2` as the re-ranker
+- Use FastEmbed with model `all-MiniLM-L6-v2` as the embedder
+- Use CrossEncoder with model `ms-marco-MiniLM-L-6-v2` as the re-ranker
 - Implemented bi-encoding + cross-encoding chunk retrieval
 - Store vectors in an actual datastore using `ChromaDB` and use it to search for chunks against query
 - Added LLM responses with `gemini-flash-lite` as the default with experimental local fallback using `llama.cpp` (model: `Phi-4-mini-instruct`)
@@ -33,10 +33,10 @@ The repository contains all the necessary Python scripts. Here is what each one 
 
 - `app.py`: is the Streamlit script. It provides the interface for the RAG system. It also checks server internet connection to determine if LLM with required API call (such as Google Gemini) is available to handle fallback, find dataset locations, download required models, etc.
 - `rag/ingest.py`: handles loading documents and splitting them into chunks using the text splitter (TikToken).
-- `rag/embed_store.py`: cached as a Streamlit resource to provide a persistent vector store across queries. It is a ChromaDB instance that store vectors of chunks loaded by `ingest.py`, embedded using SentenceTransformer, and handles switching dataset and chunk retrieval by querying the determined ChromaDB collection with an embedded query text. Results are re-ranked using `CrossEncoder`.
+- `rag/embed_store.py`: cached as a Streamlit resource to provide a persistent vector store across queries. It is a ChromaDB instance that store vectors of chunks loaded by `ingest.py`, embedded using FastEmbed, and handles switching dataset and chunk retrieval by querying the determined ChromaDB collection with an embedded query text. Results are re-ranked using `CrossEncoder`.
 - `rag/generate.py`: generates the answer based on the retrieved chunks from `embed_store.py`. It has two modes - extractive, and LLM. Extractive return the chunks as they are as answer while LLM provide an overview response based on the retrieved chunks.
 
-Models for `SentenceTransformer` and `llama.cpp` will be stored in the `model` folder and a dataset refers to a folder of documents inside the `data` folder.
+Models for `FastEmbed` and `llama.cpp` will be stored in the `model` folder and a dataset refers to a folder of documents inside the `data` folder.
 
 ## Architecture
 
@@ -52,7 +52,7 @@ The loading and indexing of documents trigger only when the selected dataset (co
 
 A token-aware chunking strategy is used because the chunks will be sent to LLMs which operate on the basis of token window. A chunk size and overlap amount was tuned such that chunks provide enough context and can relate to each other (such as chunks of the same document) so that the LLM can understand better.
 
-The chunks will then be forwarded to `embed_store.py` by `app.py` to be stored in the data store (ChromaDB). The chunks are first embedded using `nomic-ai/nomic-embed-text-v1.5` loaded via Sentence Transformers. The model allows for a larger context window compared to the tradition `all-MiniLM-L6-v2` while still being small enough, being run locally, and not too heavy.
+The chunks will then be forwarded to `embed_store.py` by `app.py` to be stored in the data store (ChromaDB). The chunks are first embedded using `all-MiniLM-L6-v2` loaded via FastEmbed.
 
 The result is vectors that is then stored inside a vector store which is ChromaDB in this case. ChromaDB was chosen primarily for familiarity, but also because it has more development resources available. It is competent enough for this application.
 
