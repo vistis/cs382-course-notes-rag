@@ -2,6 +2,8 @@
 
 ## Test Environment
 
+> Performed on commit [f7b6b59](https://github.com/vistis/cs382-course-notes-rag/tree/f7b6b59d70d36fc3dfeae6c4734de613a963a3c9).
+
 | Model Processor        | Available RAM | Chunk Size | Overlap | Answer Mode         |
 | ---------------------- | ------------- | ---------- | ------- | ------------------- |
 | CPU (~3vCPU EPYC ROME) | ~4GB          | 512        | 32      | LLM (Google Gemini) |
