@@ -2,7 +2,7 @@
 
 ## Test Environment
 
-> Performed on commit [f7b6b59](https://github.com/vistis/cs382-course-notes-rag/tree/f7b6b59d70d36fc3dfeae6c4734de613a963a3c9).
+> Performed on commit [f7b6b59](https://github.com/vistis/cs382-course-notes-rag/tree/f7b6b59d70d36fc3dfeae6c4734de613a963a3c9). Embbeder used was `nomic-embed-text-v1.5` and re-ranker used was `ms-marco-MiniLM-L-6-v2` loaded with `SentenceTransformer`
 
 | Model Processor        | Available RAM | Chunk Size | Overlap | Answer Mode         |
 | ---------------------- | ------------- | ---------- | ------- | ------------------- |
