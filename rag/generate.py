@@ -26,7 +26,7 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, 
     online = os.getenv("ONLINE")
     local_model_repo = "unsloth/Phi-4-mini-instruct-GGUF"
     local_model_name = "Phi-4-mini-instruct-Q4_K_M.gguf"
-    local_model_ctx = 3072
+    local_model_ctx = 2048
     local_llm_chunk_limit = os.getenv("LOCAL_LLM_CHUNK_LIMIT")
 
     if provider != "local":
