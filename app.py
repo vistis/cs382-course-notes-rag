@@ -9,12 +9,12 @@ from rag.generate import generate_answer
 from rag.ingest import build_chunk_records, load_documents
 
 BASE_DATA_DIR = "data"
-CHUNK_SIZE = 512
-OVERLAP = 48
+CHUNK_SIZE = 256
+OVERLAP = 24
 
 os.environ["EMBEDDING_MODEL"] = "sentence-transformers/all-MiniLM-L6-v2"
 os.environ["RERANKING_MODEL"] = "Xenova/ms-marco-MiniLM-L-6-v2"
-os.environ["LOCAL_LLM_CHUNK_LIMIT"] = "3"
+os.environ["LOCAL_LLM_CHUNK_LIMIT"] = "5"
 
 
 embedding_model = os.getenv("EMBEDDING_MODEL")
