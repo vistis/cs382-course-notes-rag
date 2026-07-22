@@ -151,7 +151,7 @@ with sb:
         "Number of chunks to retrieve",
         min_value=1,
         max_value=int(local_llm_chunk_limit) if provider == "local" else (10 if max_chunks >= 10 else (max_chunks if max_chunks > 0 else 2)),
-        value=int(local_llm_chunk_limit) if provider == "local" else (3 if max_chunks >= 3 else (max_chunks if max_chunks > 0 else 1)),
+        value=3 if max_chunks >= 3 else (max_chunks if max_chunks > 0 else 1),
     )
     score_threshold = st.slider(
         "Chunk score threshold to retrieve",

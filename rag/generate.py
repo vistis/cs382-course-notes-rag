@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List, Tuple
 
 import google.genai as genai
+import llama_cpp
 from dotenv import load_dotenv
 from llama_cpp import Llama
 
@@ -110,6 +111,9 @@ def llm_answer(query: str, retrieved: List[Tuple[Chunk, float]], provider: str, 
             model_path=f"model/Llama/{local_model_name}",
             n_ctx=local_model_ctx,
             n_gpu_layers=-1 if os.getenv("DEVICE") != "cpu" else 0,
+            flash_attn=True,
+            type_k=llama_cpp.GGML_TYPE_Q4_0,
+            type_v=llama_cpp.GGML_TYPE_Q4_0,
             verbose=False
         )
         payload = (
